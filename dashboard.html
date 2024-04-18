@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Attrition Dashboard</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    .chart {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Employee Attrition Dashboard</h1>
+
+  <div id="bar-chart" class="chart"></div>
+  <div id="scatter-plot" class="chart"></div>
+
+  <script>
+    // Fetch data from the API
+    fetch('http://localhost:3000/data')
+      .then(response => response.json())
+      .then(data => {
+        console.log(data); 
+        
+        createBarChart(data);
+        createScatterPlot(data);
+      })
+      .catch(error => console.error('Error fetching data:', error));
+
+    
+   function createBarChart(data) {
+     const margin = { top: 20, right: 30, bottom: 60, left: 60 }; 
+     const width = 800 - margin.left - margin.right; 
+     const height = 500 - margin.top - margin.bottom; 
+
+      const svg = d3.select("#bar-chart")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+      const x = d3.scaleBand()
+        .domain(data.map(d => d.JobRole))
+        .range([0, width])
+        .padding(0.1);
+
+      const y = d3.scaleLinear()
+        .domain([0, d3.max(data, d => d.YearsSinceLastPromotion)])
+        .nice()
+        .range([height, 0]);
+
+      svg.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x));
+
+      svg.append("g")
+        .call(d3.axisLeft(y));
+
+      // Define a color scale
+      const color = d3.scaleOrdinal()
+        .domain(data.map(d => d.JobRole))
+        .range(d3.schemeCategory10); // You can choose any color scheme here
+
+      svg.selectAll(".bar")
+        .data(data)
+        .enter().append("rect")
+        .attr("class", "bar")
+        .attr("x", d => x(d.JobRole))
+        .attr("y", d => y(d.YearsSinceLastPromotion))
+        .attr("width", x.bandwidth())
+        .attr("height", d => height - y(d.YearsSinceLastPromotion))
+        .attr("fill", d => color(d.JobRole)); // Set fill color based on JobRole
+
+      svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", height + margin.bottom)
+        .style("text-anchor", "middle")
+        .text("JobRole");
+
+      svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -height / 2)
+        .attr("y", -margin.left)
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .text("YearsSinceLastPromotion");
+    }
+
+
+    // Function to create a scatter plot
+    function createScatterPlot(data) {
+      const margin = { top: 20, right: 30, bottom: 30, left: 40 };
+      const width = 600 - margin.left - margin.right;
+      const height = 400 - margin.top - margin.bottom;
+
+      const svg = d3.select("#scatter-plot")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+      const x = d3.scaleLinear()
+        .domain([0, d3.max(data, d => +d.YearsAtCompany)])
+        .nice()
+        .range([0, width]);
+
+      const y = d3.scaleLinear()
+        .domain([0, d3.max(data, d => +d.MonthlyIncome)])
+        .nice()
+        .range([height, 0]);
+
+      svg.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x));
+
+      svg.append("g")
+        .call(d3.axisLeft(y));
+
+      svg.selectAll(".dot")
+        .data(data)
+        .enter().append("circle")
+        .attr("class", "dot")
+        .attr("cx", d => x(+d.YearsAtCompany))
+        .attr("cy", d => y(+d.MonthlyIncome))
+        .attr("r", 3)
+        .style("fill", "steelblue");
+
+      svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", height + margin.bottom)
+        .style("text-anchor", "middle")
+        .text("Years at Company");
+
+      svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -height / 2)
+        .attr("y", -margin.left)
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .text("Monthly Income");
+    }
+
+    
+
+  </script>
+</body>
+
+</html>
